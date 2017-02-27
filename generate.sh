@@ -1,33 +1,42 @@
 #!/bin/bash
 set -e
 
-mkdir -p \
-  "glyphs/Arimo/Regular" \
-  "glyphs/Arimo/Bold" \
-  "glyphs/Arimo/Bold Italic" \
-  "glyphs/Arimo/Italic" \
-  "glyphs/Noto Sans/Bold" \
-  "glyphs/Noto Sans/Bold Italic" \
-  "glyphs/Noto Sans/Italic" \
-  "glyphs/Noto Sans/Regular"
+for family in fonts/*; do
+  for f in $family/*.ttf; do
+    tmpdir=`mktemp -d`
+    ./node_modules/.bin/build-glyphs $f $tmpdir
 
-./node_modules/.bin/build-glyphs fonts/arimo/Arimo-Regular.ttf                       "glyphs/Arimo/Regular"
-./node_modules/.bin/build-glyphs fonts/arimo/Arimo-Bold.ttf                          "glyphs/Arimo/Bold"
-./node_modules/.bin/build-glyphs fonts/arimo/Arimo-BoldItalic.ttf                    "glyphs/Arimo/Bold Italic"
-./node_modules/.bin/build-glyphs fonts/arimo/Arimo-Italic.ttf                        "glyphs/Arimo/Italic"
-./node_modules/.bin/build-glyphs fonts/noto/hinted/NotoSans-Bold.ttf                 "glyphs/Noto Sans/Bold"
-./node_modules/.bin/build-glyphs fonts/noto/hinted/NotoSans-BoldItalic.ttf           "glyphs/Noto Sans/Bold Italic"
-./node_modules/.bin/build-glyphs fonts/noto/hinted/NotoSans-Italic.ttf               "glyphs/Noto Sans/Italic"
-./node_modules/.bin/build-glyphs fonts/noto/hinted/NotoSans-Regular.ttf              "glyphs/Noto Sans/Regular"
+    pushd "$tmpdir"
+    for i in *.pbf; do
+      SIZE=`du -k $i | cut -f1`
+      if (( $SIZE <= 4 )); then
+        # echo removing $f/$i
+        rm $i
+      fi
+    done
+    popd
 
-for f in glyphs/*/*; do
-  pushd "$f"
-  for i in *.pbf; do
-    SIZE=`du -k $i | cut -f1`
-    if (( $SIZE <= 4 )); then
-      echo removing $f/$i
-      rm $i
+    style=`basename $f .ttf | cut -d - -f2`
+    style_dir="glyphs/`basename $family`/$style"
+    mkdir -p $style_dir
+    mv $tmpdir/* $style_dir
+  done
+done
+
+
+mkdir glyphs-merged
+
+BASE_FONT=glyphs/Arimo
+for weight in "Regular" "Bold" "BoldItalic" "Italic"; do
+  cp -r $BASE_FONT/$weight glyphs-merged
+  for s in glyphs/noto glyphs/noto-i18n; do
+    if [ -e $s/$weight ]; then
+      for i in $s/$weight/*; do
+        if [ ! -f glyphs-merged/$weight/`basename "$i"` ]; then
+          echo using $i
+          cp $i glyphs-merged/$weight/
+        fi
+      done
     fi
   done
-  popd
 done
