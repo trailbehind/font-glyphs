@@ -1,3 +1,6 @@
 [submodule "fonts/noto"]
-	path = fonts/noto
+	path = noto
 	url = https://github.com/googlei18n/noto-fonts.git
+[submodule "noto-cjk"]
+	path = noto-cjk
+	url = https://github.com/googlefonts/noto-cjk.git
